@@ -15,3 +15,5 @@ Here's a description of how it works:
 <li> Spin Again Functionality: A "Spin Again" button allows the user to reset the game and spin the wheel again, while retaining the previously entered zip code for convenience. </li>
 
 <li> Dancing Emoji Background: The web page features a lively background filled with dancing food emojis, including pizza, pasta, burgers, sandwiches, salads, chicken legs, sushi, curry, ramen bowls, and soup bowls, creating a fun and dynamic visual experience. </li>
+
+Take a spin for yourself right here: <a href="https://neilschreiner.github.io/TheWheelOfLunch/">https://neilschreiner.github.io/TheWheelOfLunch/</a>
