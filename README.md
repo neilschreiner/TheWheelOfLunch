@@ -1,20 +1,17 @@
-The <b>Wheel of Lunch</b> game is a Lunch Picker Wheel designed to help users decide where to eat for lunch.
+🎡 The Wheel of Lunch
+Tired of the endless "What's for lunch?" debate? The Wheel of Lunch is a fun, interactive lunch picker designed to make your decision-making effortless and exciting!
 
-Here's a description of how it works:
+Spin it yourself here: https://neilschreiner.github.io/TheWheelOfLunch/
 
-<li> Dynamic Lunch Place Loading: Upon entering a zip code, the game will fetch (simulated via an LLM call) five popular lunch restaurants in the specified zip code that are currently open and serve food. These restaurant names then populate the segments of a spinner wheel. If fewer than five places are found, generic names are used to fill the remaining slots. </li>
+How It Works
+Zip Code Power: Enter your zip code, and the wheel dynamically loads up to five popular, open lunch spots nearby. Not enough options? We'll fill the rest with generic picks to keep the fun rolling!
 
-<li> Automatic Spinning Wheel: Once the lunch places are loaded, the wheel automatically starts spinning for 8 seconds. A fixed red arrow at the top of the wheel indicates the winning spot. </li>
+Automatic Spin: Watch as the wheel automatically spins for 8 seconds, building anticipation.
 
-<li> Result Display: A "Congratulations!" box appears on top of the spinner wheel, displaying the name of the chosen restaurant. </li>
+Instant Result: A "Congratulations!" box pops up, revealing your chosen restaurant.
 
-<li> Confetti Celebration: After the wheel stops, a burst of colorful confetti shoots from all sides of the screen towards the center, then falls away, celebrating the chosen lunch spot. </li>
+Google Maps Ready: Find your way easily with a "View on Google Maps" button that opens directions in a new tab.
 
-<li> Google Maps Integration: A "View on Google Maps" button is provided, which opens a new tab with a Google Maps search for the selected restaurant and the user's zip code, making it easy to find directions. </li>
+Spin Again: Want another go? Hit "Spin Again" to restart.
 
-<li> Spin Again Functionality: A "Spin Again" button allows the user to reset the game and spin the wheel again, while retaining the previously entered zip code for convenience. </li>
-
-<li> Dancing Emoji Background: The web page features a lively background filled with dancing food emojis, including pizza, pasta, burgers, sandwiches, salads, chicken legs, sushi, curry, ramen bowls, and soup bowls, creating a fun and dynamic visual experience. </li>
-<br/>
-<p>Take a spin for yourself right here: <a href="https://neilschreiner.github.io/TheWheelOfLunch/">https://neilschreiner.github.io/TheWheelOfLunch/</a></p>
-<img src="https://neilschreiner.github.io/TheWheelOfLunch/Logos/wheeloflunch.png" alt="Wheel of Lunch" style="width: 800px; display: block; margin-left: auto; margin-right: auto;">
+![Wheel of Lunch game](https://neilschreiner.github.io/TheWheelOfLunch/Logos/wheeloflunch.png)
