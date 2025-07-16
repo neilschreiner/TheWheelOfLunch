@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -99,30 +99,32 @@
             position: absolute;
             /* Position the text radially outward from the center, and make it upright */
             left: 50%; /* Center horizontally within the half-width segment */
-            top: 35%; /* Adjusted to be closer to the center of the wheel */
+            top: 80%; /* Adjusted to be closer to the center of the wheel (pivot point) */
             transform: translate(-50%, -50%) rotate(calc(var(--segment-base-angle) * -1)); /* Counter-rotate and center */
             transform-origin: center center; /* Rotate around its own center */
-            white-space: nowrap; /* Keep text on one line */
+            white-space: normal; /* Allow text to wrap for better fit */
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 140px; /* Increased limit text width to fit within segment */
+            max-width: 90%; /* Adjust max-width to fit better within the segment */
             padding: 0 5px; /* Add some padding */
             line-height: 1.2; /* Adjust line height for multi-line text */
-            font-size: 0.8rem; /* Slightly reduced font size for better fit */
+            font-size: 0.75rem; /* Slightly reduced font size for better fit */
             display: flex;
             align-items: center;
             justify-content: center;
             height: auto; /* Allow height to adjust based on content */
             box-sizing: border-box;
+            word-break: break-word; /* Allow long words to break */
         }
 
-        /* Colors for segments */
+        /* Colors for segments - Now opaque */
         .segment-1 { background-color: #fca5a5; } /* Red-200 */
         .segment-2 { background-color: #fcd34d; } /* Amber-200 */
         .segment-3 { background-color: #a7f3d0; } /* Emerald-200 */
         .segment-4 { background-color: #bfdbfe; } /* Blue-200 */
         .segment-5 { background-color: #e9d5ff; } /* Purple-200 */
         .segment-6 { background-color: #fed7aa; } /* Orange-200 (kept for color cycling, though only 5 segments now) */
+
 
         /* Spinner pointer - Now outside wheelContainer and fixed */
         .pointer {
@@ -286,9 +288,15 @@
             <h2 class="text-2xl font-bold text-gray-800">Congratulations!</h2>
             <p class="text-lg text-gray-700">You're eating at:</p>
             <p id="chosenPlace" class="text-3xl font-extrabold text-indigo-600"></p>
-            <div class="flex flex-col sm:flex-row gap-3 mt-4">
-                <button id="viewOnMapsBtn" class="btn btn-primary">View on Google Maps</button>
-                <button id="spinAgainBtn" class="btn btn-secondary">Spin Again</button>
+            <div class="flex flex-col gap-3 mt-4 w-full items-center">
+                <button id="viewOnMapsBtn" class="btn btn-primary w-full sm:w-auto">View on Google Maps</button>
+                <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <button id="spinAgainBtn" class="btn btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 0020 13a8 8 0 00-15.356-2m15.356 2H20v-5m-14 2H4v5"></path></svg>
+                        Spin Again
+                    </button>
+                    <button id="tryAnotherZipBtn" class="btn btn-secondary w-full sm:w-auto">Try Another Zip Code</button>
+                </div>
             </div>
         </div>
     </div>
@@ -300,7 +308,7 @@
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         // Emojis for background - Fixed broken emoji and added new ones
-        const emojis = ['🍕', '🍝', '🍔', '🥪', '🥗', '🍗', '🍣', '🍛', '🍲', '🥣']; // Replaced '?' with '🍲'
+        const emojis = ['🍕', '🍝', '🍔', '🥪', '🥗', '🍗', '🍣', '🍛', '🍲', '🥣'];
         const emojiContainer = document.querySelector('.emoji-container');
 
         // DOM Elements
@@ -312,6 +320,7 @@
         const chosenPlaceText = document.getElementById('chosenPlace');
         const viewOnMapsBtn = document.getElementById('viewOnMapsBtn');
         const spinAgainBtn = document.getElementById('spinAgainBtn');
+        const tryAnotherZipBtn = document.getElementById('tryAnotherZipBtn'); // New button reference
 
         // Game State
         let lunchPlaces = [];
@@ -423,9 +432,29 @@
 
         // --- Spinner Wheel Functions ---
 
-        // Function to populate the spinner wheel with places
+        // Function to populate the spinner wheel with places or initial image
         function populateSpinner(places) {
-            wheelContainer.innerHTML = ''; // Clear existing segments
+            wheelContainer.innerHTML = ''; // Clear existing segments (and any initial image)
+
+            if (places.length === 0) { // If no places, show the initial image
+                const initialImage = document.createElement('img');
+                initialImage.src = 'https://neilschreiner.github.io/TheWheelOfLunch/Logos/WheelOfLunch_Characters_square.PNG';
+                initialImage.alt = 'The Wheel of Lunch Characters';
+                initialImage.style.cssText = `
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover; /* Ensure the image covers the wheel */
+                    border-radius: 50%; /* Keep it circular */
+                    z-index: -1; /* Place it behind segments */
+                `;
+                wheelContainer.appendChild(initialImage);
+                return; // Exit if no places to add segments for
+            }
+
             const numSegments = 5; // Fixed to 5 segments
             const anglePerSegment = 360 / numSegments; // 72 degrees for 5 segments
 
@@ -527,7 +556,7 @@
                     }
                 };
 
-                const apiKey = "AIzaSyCB8G5Se9p5IBQpAVBun8_ogkdU7sdN3y8"; 
+                const apiKey = "AIzaSyAcSSabU-_5QFSHM4_yjmcV8hvsmdQ_3MI";
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 const response = await fetch(apiUrl, {
@@ -611,8 +640,8 @@
                 zipCodeInput.value = savedZipCode;
                 fetchLunchPlaces(savedZipCode); // Automatically load places if zip code exists
             } else {
-                // If no saved zip code, the wheel starts empty.
-                lunchPlaces = []; // Ensure lunchPlaces is empty
+                // If no saved zip code, display the initial image inside the wheel
+                populateSpinner([]); // Call with empty array to show initial image
             }
 
             loadPlacesBtn.addEventListener('click', () => {
@@ -624,6 +653,13 @@
                 // Retain zip code, then refresh page
                 localStorage.setItem('lunchPickerZipCode', zipCodeInput.value);
                 window.location.reload();
+            });
+
+            // New event listener for "Try Another Zip Code" button
+            tryAnotherZipBtn.addEventListener('click', () => {
+                zipCodeInput.value = ''; // Clear zip code input
+                localStorage.removeItem('lunchPickerZipCode'); // Remove saved zip code
+                window.location.reload(); // Refresh the page to start fresh
             });
         });
     </script>
