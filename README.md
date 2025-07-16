@@ -14,5 +14,4 @@ Google Maps Ready: Find your way easily with a "View on Google Maps" button that
 
 Spin Again: Want another go? Hit "Spin Again" to restart.
 
-![Wheel of Lunch game](https://neilschreiner.github.io/TheWheelOfLunch/Logos/wheeloflunch.png)
-
+![Wheel of Lunch game](https://github.com/neilschreiner/TheWheelOfLunch/blob/main/Logos/wheeloflunch.png?raw=true)
