@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Wheel of Lunch</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Prevent scroll from dancing emojis */
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Dancing Emojis Background */
+        .emoji-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allow clicks to pass through */
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .emoji {
+            position: absolute;
+            font-size: 3rem;
+            animation: dance linear infinite;
+            opacity: 0.8;
+            will-change: transform, opacity;
+        }
+
+        @keyframes dance {
+            0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 0.8; }
+            25% { transform: translate(var(--x1), var(--y1)) rotate(var(--r1)) scale(var(--s1)); opacity: 0.9; }
+            50% { transform: translate(var(--x2), var(--y2)) rotate(var(--r2)) scale(var(--s2)); opacity: 0.7; }
+            75% { transform: translate(var(--x3), var(--y3)) rotate(var(--r3)) scale(var(--s3)); opacity: 0.9; }
+            100% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 0.8; }
+        }
+
+        /* Main Content Box */
+        .main-box {
+            position: relative;
+            z-index: 10;
+            background-color: white;
+            border-radius: 1.5rem; /* Rounded corners */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            padding: 2.5rem;
+            max-width: 90%;
+            width: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        /* Spinner Wheel */
+        .wheel-container {
+            position: relative;
+            width: 300px; /* Base size */
+            height: 300px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 8px solid #cbd5e0; /* Light gray border */
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 8s cubic-bezier(0.25, 0.1, 0.25, 1); /* Easing for spin - Increased to 8s */
+        }
+
+        .wheel-segment {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 50%;
+            height: 50%;
+            transform-origin: 0% 100%; /* Pivot from the center of the wheel */
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #333;
+            text-align: center;
+            padding: 0.5rem;
+            box-sizing: border-box;
+            border: 1px solid rgba(255,255,255,0.2); /* Subtle internal borders */
+        }
+
+        .wheel-segment-text {
+            position: absolute;
+            /* Position the text radially outward from the center, and make it upright */
+            left: 50%; /* Center horizontally within the half-width segment */
+            top: 35%; /* Adjusted to be closer to the center of the wheel */
+            transform: translate(-50%, -50%) rotate(calc(var(--segment-base-angle) * -1)); /* Counter-rotate and center */
+            transform-origin: center center; /* Rotate around its own center */
+            white-space: nowrap; /* Keep text on one line */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px; /* Increased limit text width to fit within segment */
+            padding: 0 5px; /* Add some padding */
+            line-height: 1.2; /* Adjust line height for multi-line text */
+            font-size: 0.8rem; /* Slightly reduced font size for better fit */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: auto; /* Allow height to adjust based on content */
+            box-sizing: border-box;
+        }
+
+        /* Colors for segments */
+        .segment-1 { background-color: #fca5a5; } /* Red-200 */
+        .segment-2 { background-color: #fcd34d; } /* Amber-200 */
+        .segment-3 { background-color: #a7f3d0; } /* Emerald-200 */
+        .segment-4 { background-color: #bfdbfe; } /* Blue-200 */
+        .segment-5 { background-color: #e9d5ff; } /* Purple-200 */
+        .segment-6 { background-color: #fed7aa; } /* Orange-200 (kept for color cycling, though only 5 segments now) */
+
+        /* Spinner pointer - Now outside wheelContainer and fixed */
+        .pointer {
+            position: absolute;
+            top: 0; /* Aligned with the top edge of the wheel container */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent; /* Width of the pointer base */
+            border-right: 15px solid transparent; /* Width of the pointer base */
+            border-top: 75px solid #ef4444; /* Height and color of the pointer, pointing down */
+            z-index: 20;
+        }
+
+        /* Result Box */
+        .result-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            z-index: 30;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            gap: 1rem;
+            max-width: 80%;
+        }
+
+        /* Confetti */
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 50;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00; /* Default color */
+            animation: fall linear forwards;
+            opacity: 0;
+            border-radius: 2px;
+        }
+
+        @keyframes fall {
+            0% { transform: translate(var(--x-start), var(--y-start)) rotate(0deg); opacity: 0; }
+            20% { transform: translate(var(--x-mid), var(--y-mid)) rotate(var(--r-mid)); opacity: 1; } /* Shoot towards center */
+            100% { transform: translate(var(--x-end), var(--y-end)) rotate(720deg); opacity: 0; } /* Fall away */
+        }
+
+        /* Button Styling */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background-color: #4f46e5; /* Indigo-600 */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca; /* Indigo-700 */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-secondary {
+            background-color: #e2e8f0; /* Slate-200 */
+            color: #333;
+        }
+        .btn-secondary:hover {
+            background-color: #cbd5e0; /* Slate-300 */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        .btn-secondary:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            .main-box {
+                padding: 1.5rem;
+                gap: 1rem;
+            }
+            .wheel-container {
+                width: 250px;
+                height: 250px;
+                border-width: 6px;
+            }
+            .wheel-segment {
+                font-size: 0.8rem;
+            }
+            .pointer {
+                top: 0; /* Adjusted for smaller screen */
+                border-left-width: 12px;
+                border-right-width: 12px;
+                border-top-width: 60px; /* Adjusted for smaller screen */
+            }
+            .result-box {
+                padding: 1rem;
+            }
+            .emoji {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <!-- Dancing Emojis Background -->
+    <div class="emoji-container"></div>
+
+    <!-- Main Content Box -->
+    <div class="main-box">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">The Wheel of Lunch</h1>
+
+        <div class="flex flex-col items-center gap-2 w-full">
+            <label for="zipCodeInput" class="text-gray-700 font-medium">Enter your Zip Code:</label>
+            <input type="text" id="zipCodeInput" placeholder="e.g., 90210"
+                   class="p-3 border border-gray-300 rounded-lg w-full max-w-xs text-center focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <button id="loadPlacesBtn" class="btn btn-primary mt-2">Load Lunch Places</button>
+        </div>
+
+        <!-- Spinner Wheel and Pointer -->
+        <div class="relative mt-6">
+            <div id="wheelContainer" class="wheel-container">
+                <!-- Segments will be dynamically added here by JavaScript -->
+            </div>
+            <div class="pointer"></div> <!-- Moved outside wheelContainer -->
+        </div>
+
+        <!-- Loading Spinner for API call -->
+        <div id="loadingSpinner" class="hidden flex items-center justify-center mt-4">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+            <span class="ml-3 text-gray-600">Finding lunch spots...</span>
+        </div>
+
+        <!-- Result Box (initially hidden) -->
+        <div id="resultBox" class="result-box">
+            <h2 class="text-2xl font-bold text-gray-800">Congratulations!</h2>
+            <p class="text-lg text-gray-700">You're eating at:</p>
+            <p id="chosenPlace" class="text-3xl font-extrabold text-indigo-600"></p>
+            <div class="flex flex-col sm:flex-row gap-3 mt-4">
+                <button id="viewOnMapsBtn" class="btn btn-primary">View on Google Maps</button>
+                <button id="spinAgainBtn" class="btn btn-secondary">Spin Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables for Firebase configuration (provided by Canvas environment)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Emojis for background - Fixed broken emoji and added new ones
+        const emojis = ['🍕', '🍝', '🍔', '🥪', '🥗', '🍗', '🍣', '🍛', '🍲', '🥣']; // Replaced '?' with '🍲'
+        const emojiContainer = document.querySelector('.emoji-container');
+
+        // DOM Elements
+        const zipCodeInput = document.getElementById('zipCodeInput');
+        const loadPlacesBtn = document.getElementById('loadPlacesBtn');
+        const wheelContainer = document.getElementById('wheelContainer');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const resultBox = document.getElementById('resultBox');
+        const chosenPlaceText = document.getElementById('chosenPlace');
+        const viewOnMapsBtn = document.getElementById('viewOnMapsBtn');
+        const spinAgainBtn = document.getElementById('spinAgainBtn');
+
+        // Game State
+        let lunchPlaces = [];
+        let isSpinning = false;
+
+        // --- Utility Functions ---
+
+        // Function to generate random number within a range
+        function getRandom(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        // Function to create and animate a single confetti piece
+        function createConfetti() {
+            const confetti = document.createElement('div');
+            confetti.classList.add('confetti');
+            document.body.appendChild(confetti);
+
+            const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800', '#FF5722'];
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const buffer = 50; // Buffer outside viewport
+            const centerX = viewportWidth / 2;
+            const centerY = viewportHeight / 2;
+
+            let startX, startY;
+            const startSide = Math.floor(Math.random() * 4); // 0: top, 1: right, 2: bottom, 3: left
+
+            if (startSide === 0) { // Top
+                startX = getRandom(-buffer, viewportWidth + buffer);
+                startY = getRandom(-buffer, -10);
+            } else if (startSide === 1) { // Right
+                startX = getRandom(viewportWidth + 10, viewportWidth + buffer);
+                startY = getRandom(-buffer, viewportHeight + buffer);
+            } else if (startSide === 2) { // Bottom
+                startX = getRandom(-buffer, viewportWidth + buffer);
+                startY = getRandom(viewportHeight + 10, viewportHeight + buffer);
+            } else { // Left
+                startX = getRandom(-buffer, -10);
+                startY = getRandom(-buffer, viewportHeight + buffer);
+            }
+
+            // Mid-point towards the center of the screen
+            const midX = getRandom(centerX - 150, centerX + 150);
+            const midY = getRandom(centerY - 150, centerY + 150);
+            const midRot = getRandom(180, 540); // Random rotation at mid-point
+
+            // End points: always fall off the bottom, with some horizontal drift
+            const endX = getRandom(-buffer, viewportWidth + buffer);
+            const endY = viewportHeight + getRandom(50, 150);
+
+            confetti.style.setProperty('--x-start', `${startX}px`);
+            confetti.style.setProperty('--y-start', `${startY}px`);
+            confetti.style.setProperty('--x-mid', `${midX}px`);
+            confetti.style.setProperty('--y-mid', `${midY}px`);
+            confetti.style.setProperty('--r-mid', `${midRot}deg`);
+            confetti.style.setProperty('--x-end', `${endX}px`);
+            confetti.style.setProperty('--y-end', `${endY}px`);
+
+            confetti.style.animationDuration = `${getRandom(3, 7)}s`; // Longer duration for falling
+            confetti.style.animationDelay = `${getRandom(0, 0.5)}s`;
+            confetti.style.animationTimingFunction = 'ease-out'; // Fast start, slow end for burst effect
+
+            confetti.addEventListener('animationend', () => {
+                confetti.remove();
+            });
+        }
+
+        // Trigger confetti burst
+        function triggerConfettiBurst(count = 100) {
+            for (let i = 0; i < count; i++) {
+                createConfetti();
+            }
+        }
+
+        // Function to create and animate dancing emojis
+        function createDancingEmojis() {
+            emojis.forEach((emojiChar) => {
+                const emoji = document.createElement('span');
+                emoji.classList.add('emoji');
+                emoji.textContent = emojiChar;
+                emojiContainer.appendChild(emoji);
+
+                // Set random initial position
+                emoji.style.left = `${getRandom(0, 100)}vw`;
+                emoji.style.top = `${getRandom(0, 100)}vh`;
+                emoji.style.animationDuration = `${getRandom(10, 20)}s`;
+                emoji.style.animationDelay = `${getRandom(0, 5)}s`;
+
+                // Set custom properties for animation keyframes
+                emoji.style.setProperty('--x1', `${getRandom(-200, 200)}px`);
+                emoji.style.setProperty('--y1', `${getRandom(-200, 200)}px`);
+                emoji.style.setProperty('--r1', `${getRandom(-180, 180)}deg`);
+                emoji.style.setProperty('--s1', `${getRandom(0.8, 1.2)}`);
+
+                emoji.style.setProperty('--x2', `${getRandom(-200, 200)}px`);
+                emoji.style.setProperty('--y2', `${getRandom(-200, 200)}px`);
+                emoji.style.setProperty('--r2', `${getRandom(-180, 180)}deg`);
+                emoji.style.setProperty('--s2', `${getRandom(0.8, 1.2)}`);
+
+                emoji.style.setProperty('--x3', `${getRandom(-200, 200)}px`);
+                emoji.style.setProperty('--y3', `${getRandom(-200, 200)}px`);
+                emoji.style.setProperty('--r3', `${getRandom(-180, 180)}deg`);
+                emoji.style.setProperty('--s3', `${getRandom(0.8, 1.2)}`);
+            });
+        }
+
+        // --- Spinner Wheel Functions ---
+
+        // Function to populate the spinner wheel with places
+        function populateSpinner(places) {
+            wheelContainer.innerHTML = ''; // Clear existing segments
+            const numSegments = 5; // Fixed to 5 segments
+            const anglePerSegment = 360 / numSegments; // 72 degrees for 5 segments
+
+            places.forEach((place, index) => {
+                const segment = document.createElement('div');
+                segment.classList.add('wheel-segment', `segment-${(index % 6) + 1}`); // Cycle through 6 colors
+                const segmentRotation = index * anglePerSegment;
+                segment.style.transform = `rotate(${segmentRotation}deg)`;
+
+                const textDiv = document.createElement('div');
+                textDiv.classList.add('wheel-segment-text');
+                textDiv.textContent = place;
+                textDiv.style.setProperty('--segment-base-angle', `${segmentRotation}deg`);
+                segment.appendChild(textDiv);
+
+                wheelContainer.appendChild(segment);
+            });
+        }
+
+        // Function to spin the wheel
+        function spinWheel() {
+            if (isSpinning || lunchPlaces.length === 0) return;
+
+            isSpinning = true;
+            loadPlacesBtn.disabled = true;
+            zipCodeInput.disabled = true;
+            wheelContainer.style.cursor = 'not-allowed';
+            resultBox.style.display = 'none'; // Hide result box if visible
+
+            const numSegments = 5; // Fixed to 5 segments
+            const anglePerSegment = 360 / numSegments;
+
+            // Calculate a random target segment index
+            const chosenIndex = Math.floor(Math.random() * numSegments);
+            const chosenPlace = lunchPlaces[chosenIndex];
+
+            // Calculate the target rotation.
+            // Ensure it spins at least 5 full times for visual effect.
+            // The pointer is at the top (0 degrees).
+            // To land on a segment, we need to rotate the wheel such that the segment's center aligns with the pointer.
+            // The segments are drawn starting from 0 degrees (top right).
+            // The center of segment 0 is at anglePerSegment / 2.
+            // So, to point to segment `chosenIndex`, the wheel needs to rotate by:
+            // (360 - (chosenIndex * anglePerSegment + anglePerSegment / 2))
+            // Plus multiple full rotations.
+            const minFullRotations = 5;
+            const targetRotation = (minFullRotations * 360) + (360 - (chosenIndex * anglePerSegment + anglePerSegment / 2));
+
+            // Apply the rotation
+            wheelContainer.style.transform = `rotate(${targetRotation}deg)`;
+
+            // After the spin animation completes
+            setTimeout(() => {
+                isSpinning = false;
+                loadPlacesBtn.disabled = false;
+                zipCodeInput.disabled = false;
+                wheelContainer.style.cursor = 'pointer';
+
+                // Display result
+                chosenPlaceText.textContent = chosenPlace;
+                resultBox.style.display = 'flex';
+
+                // Construct Google Maps URL
+                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(chosenPlace + ' ' + zipCodeInput.value)}`;
+                viewOnMapsBtn.onclick = () => window.open(mapsUrl, '_blank');
+
+                triggerConfettiBurst(); // Shoot confetti
+            }, 8000); // Increased spin time to 8 seconds
+        }
+
+        // --- API Call (Mocked with Gemini API and google_search tool) ---
+
+        async function fetchLunchPlaces(zipCode) {
+            if (!zipCode) {
+                // Using a custom message box instead of alert()
+                displayMessageBox('Please enter a zip code!');
+                return;
+            }
+
+            loadingSpinner.style.display = 'flex';
+            loadPlacesBtn.disabled = true;
+            zipCodeInput.disabled = true;
+            wheelContainer.style.pointerEvents = 'none'; // Disable wheel interaction during loading
+
+            try {
+                let chatHistory = [];
+                // Updated prompt to request 5 places
+                const prompt = `Find 5 popular lunch restaurants in ${zipCode} that are currently open and serve food. Provide only their names as a JSON array of strings. For example: ["Restaurant A", "Restaurant B", "Restaurant C", "Restaurant D", "Restaurant E"]. If you cannot find 5, provide as many as you can, and fill the rest with generic names like "Local Eatery", "Quick Bite Spot".`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "ARRAY",
+                            items: { "type": "STRING" }
+                        }
+                    }
+                };
+
+                const apiKey = ""; // Canvas will provide this at runtime
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const jsonString = result.candidates[0].content.parts[0].text;
+                    const parsedPlaces = JSON.parse(jsonString);
+
+                    // Ensure we always have 5 places, even if the API returns fewer
+                    lunchPlaces = parsedPlaces.slice(0, 5);
+                    while (lunchPlaces.length < 5) {
+                        lunchPlaces.push(`Generic Lunch Spot ${lunchPlaces.length + 1}`);
+                    }
+                    populateSpinner(lunchPlaces);
+                    wheelContainer.style.pointerEvents = 'auto'; // Enable wheel after loading
+                    spinWheel(); // Automatically spin the wheel after loading places
+                } else {
+                    console.error("API response structure unexpected:", result);
+                    displayMessageBox("Could not fetch lunch places. Please try again.");
+                    // Fallback to default places if API fails
+                    lunchPlaces = ["Pizza Place", "Burger Joint", "Salad Bar", "Sushi Spot", "Taco Truck"]; // 5 default places
+                    populateSpinner(lunchPlaces);
+                    wheelContainer.style.pointerEvents = 'auto';
+                }
+
+            } catch (error) {
+                console.error("Error fetching lunch places:", error);
+                displayMessageBox("Failed to load lunch places. Please check your internet connection or try a different zip code.");
+                // Fallback to default places on error
+                lunchPlaces = ["Pizza Place", "Burger Joint", "Salad Bar", "Sushi Spot", "Taco Truck"]; // 5 default places
+                populateSpinner(lunchPlaces);
+                wheelContainer.style.pointerEvents = 'auto';
+            } finally {
+                loadingSpinner.style.display = 'none';
+                loadPlacesBtn.disabled = false;
+                zipCodeInput.disabled = false;
+            }
+        }
+
+        // Custom Message Box (replaces alert())
+        function displayMessageBox(message) {
+            const messageBox = document.createElement('div');
+            messageBox.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background-color: white;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+                z-index: 1000;
+                text-align: center;
+                max-width: 300px;
+                font-family: 'Inter', sans-serif;
+            `;
+            messageBox.innerHTML = `
+                <p class="text-lg text-gray-800 mb-4">${message}</p>
+                <button class="btn btn-primary" onclick="this.parentNode.remove()">OK</button>
+            `;
+            document.body.appendChild(messageBox);
+        }
+
+
+        // --- Event Listeners and Initialization ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            createDancingEmojis();
+
+            // Load saved zip code
+            const savedZipCode = localStorage.getItem('lunchPickerZipCode');
+            if (savedZipCode) {
+                zipCodeInput.value = savedZipCode;
+                fetchLunchPlaces(savedZipCode); // Automatically load places if zip code exists
+            } else {
+                // If no saved zip code, the wheel starts empty.
+                lunchPlaces = []; // Ensure lunchPlaces is empty
+            }
+
+            loadPlacesBtn.addEventListener('click', () => {
+                localStorage.setItem('lunchPickerZipCode', zipCodeInput.value); // Save zip code
+                fetchLunchPlaces(zipCodeInput.value);
+            });
+
+            spinAgainBtn.addEventListener('click', () => {
+                // Retain zip code, then refresh page
+                localStorage.setItem('lunchPickerZipCode', zipCodeInput.value);
+                window.location.reload();
+            });
+        });
+    </script>
+</body>
+</html>
