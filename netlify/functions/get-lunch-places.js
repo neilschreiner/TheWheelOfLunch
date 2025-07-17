@@ -15,8 +15,8 @@ exports.handler = async function(event, context) {
     }
 
     const zipCode = event.queryStringParameters.zipCode;
-    const minutes = parseInt(event.queryStringParameters.minutes, 10); // New: desired travel time in minutes
-    const travelMode = event.queryStringParameters.travelMode; // New: 'walking' or 'driving'
+    const minutes = parseInt(event.queryStringParameters.minutes, 10); // Desired travel time in minutes
+    const travelMode = event.queryStringParameters.travelMode; // 'walking' or 'driving'
 
     if (!zipCode || isNaN(minutes) || !travelMode) {
         return {
@@ -67,12 +67,31 @@ exports.handler = async function(event, context) {
         };
     }
 
+    // --- Determine dynamic search radius based on travel mode and time ---
+    let searchRadius; // in meters
+    if (travelMode === 'walking') {
+        if (minutes <= 10) {
+            searchRadius = 1000; // 1 km for very short walks
+        } else if (minutes <= 20) {
+            searchRadius = 2000; // 2 km for medium walks
+        } else { // This block will now only be hit if minutes > 20, but frontend limits to 20
+            searchRadius = 4000; // Default for longer walks, though not directly selectable now
+        }
+    } else { // driving mode
+        if (minutes <= 10) {
+            searchRadius = 8000; // 8 km for short drives
+        } else if (minutes <= 20) {
+            searchRadius = 15000; // 15 km for medium drives
+        } else { // This block will now only be hit if minutes > 20, but frontend limits to 20
+            searchRadius = 25000; // Default for longer drives, though not directly selectable now
+        }
+    }
+    console.log(`Dynamic Search Radius set to: ${searchRadius} meters for ${minutes} minutes ${travelMode}`);
+
+
     // --- Step 2: Search for Nearby Places (Restaurants) ---
-    // Use a generous radius to find enough candidates for Distance Matrix
-    // Max radius for Nearby Search is 50,000 meters.
-    // We'll fetch more than 5, to allow for filtering by travel time.
-    const searchRadius = 15000; // 15 km radius for initial search
-    const placesSearchLimit = 20; // Fetch up to 20 places for distance calculation
+    // We'll fetch up to 20 places for distance calculation.
+    const placesSearchLimit = 20;
 
     try {
         const placesApiUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${originLatitude},${originLongitude}&radius=${searchRadius}&type=restaurant&key=${API_KEY}`;

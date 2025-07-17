@@ -288,6 +288,7 @@
                     <option value="10" selected>10 minutes</option> <!-- Default to 10 minutes -->
                     <option value="15">15 minutes</option>
                     <option value="20">20 minutes</option>
+                    <!-- Removed 30, 45, 60 minute options -->
                 </select>
                 <span class="text-gray-700 font-medium">by</span>
                 <div class="flex flex-col items-start gap-2 ml-2"> <!-- Changed to flex-col for stacking -->
@@ -344,7 +345,7 @@
 
     <script>
         // Emojis for background
-        const emojis = ['🍕', '🍝', '🍔', '🥗', '🍗', '🍣', '🍛', '🍲', '🥣', '☕', '🍩', '🫔', '🥬', '🍖'];
+        const emojis = ['🍕', '🍝', '🍔', '🥪', '🥗', '🍗', '🍣', '🍛', '🍲', '🥣', '☕', '🫔', '🥬', '🍖'];
         const emojiContainer = document.querySelector('.emoji-container');
 
         // DOM Elements
@@ -395,9 +396,6 @@
             } else if (startSide === 1) { // Right
                 startX = getRandom(viewportWidth + 10, viewportWidth + buffer);
                 startY = getRandom(-buffer, viewportHeight + buffer);
-            } else if (startSide === 2) { // Bottom
-                startX = getRandom(-buffer, viewportWidth + buffer);
-                startY = getRandom(viewportHeight + 10, viewportHeight + buffer);
             } else { // Left
                 startX = getRandom(-buffer, -10);
                 startY = getRandom(-buffer, viewportHeight + buffer);
@@ -669,7 +667,7 @@
 
             // Load saved zip code and default travel options
             const savedZipCode = localStorage.getItem('lunchPickerZipCode');
-            const savedTravelTime = localStorage.getItem('lunchPickerTravelTime') || '10';
+            const savedTravelTime = localStorage.getItem('lunchPickerTravelTime') || '10'; // Default to 10 minutes
             const savedTravelMode = localStorage.getItem('lunchPickerTravelMode') || 'walking';
 
             zipCodeInput.value = savedZipCode || '';
