@@ -34,8 +34,12 @@ exports.handler = async function(event, context) {
     // --- Step 1: Geocode the Zip Code ---
     try {
         const geocodingApiUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${zipCode}&key=${API_KEY}`;
+        console.log('Geocoding URL:', geocodingApiUrl); // Log the Geocoding URL
         const geoResponse = await fetch(geocodingApiUrl);
         const geoData = await geoResponse.json();
+
+        console.log('Geocoding Response Status:', geoResponse.status); // Log Geocoding response status
+        console.log('Geocoding Response Data:', JSON.stringify(geoData, null, 2)); // Log full Geocoding response data
 
         if (!geoResponse.ok || geoData.status !== 'OK' || geoData.results.length === 0) {
             console.error('Geocoding API error:', geoData);
@@ -47,6 +51,7 @@ exports.handler = async function(event, context) {
 
         latitude = geoData.results[0].geometry.location.lat;
         longitude = geoData.results[0].geometry.location.lng;
+        console.log(`Geocoded: Lat ${latitude}, Lng ${longitude}`); // Log geocoded coordinates
 
     } catch (error) {
         console.error('Error during geocoding:', error);
@@ -58,17 +63,14 @@ exports.handler = async function(event, context) {
 
     // --- Step 2: Search for Places (Restaurants) using Geocoded Coordinates ---
     try {
-        // Google Places Nearby Search API
-        // type=restaurant for restaurants
-        // rankby=distance (requires keyword or type, and radius is ignored)
-        // keyword=lunch or type=restaurant
-        // We'll use a radius to ensure we get places around the zip code.
-        // Google recommends a radius of 50,000 meters (50km) as a maximum.
-        // We'll ask for a high limit and then truncate to 5.
         const placesApiUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=10000&type=restaurant&key=${API_KEY}`; // 10km radius
+        console.log('Places API URL:', placesApiUrl); // Log the Places API URL
 
         const placesResponse = await fetch(placesApiUrl);
         const placesData = await placesResponse.json();
+
+        console.log('Places API Response Status:', placesResponse.status); // Log Places API response status
+        console.log('Places API Response Data:', JSON.stringify(placesData, null, 2)); // Log full Places API response data
 
         if (!placesResponse.ok || placesData.status !== 'OK') {
             console.error('Places API error:', placesData);
@@ -78,37 +80,30 @@ exports.handler = async function(event, context) {
             };
         }
 
-        // Extract place names, filter for open places if desired, and limit to 5
         let lunchPlaces = [];
         if (placesData.results && placesData.results.length > 0) {
-            // Filter for places that are "OPEN_NOW" if that data is available and reliable
-            // Note: 'opening_hours' might not always be present or accurate, especially for small businesses.
             const openPlaces = placesData.results.filter(place => place.opening_hours && place.opening_hours.open_now);
-
-            // Prioritize open places, then fill with any places if not enough open ones
             const placesToUse = openPlaces.length >= 5 ? openPlaces : placesData.results;
-
-            // Get the names, ensuring we only take up to 5
             lunchPlaces = placesToUse.slice(0, 5).map(place => place.name);
 
-            // If still less than 5, fill with generic names
             while (lunchPlaces.length < 5) {
                 lunchPlaces.push(`Generic Spot ${lunchPlaces.length + 1}`);
             }
         } else {
-            // If no results, provide generic names
             lunchPlaces = ["Pizza Place", "Burger Joint", "Salad Bar", "Sushi Spot", "Taco Truck"];
         }
+
+        console.log('Returning lunch places:', JSON.stringify(lunchPlaces)); // Log final places returned
 
         return {
             statusCode: 200,
             headers: {
                 'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*', // Or restrict to your Netlify domain: 'https://thewheeloflunch.netlify.app'
+                'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type',
             },
-            body: JSON.stringify(lunchPlaces), // Send back the array of names
+            body: JSON.stringify(lunchPlaces),
         };
 
     } catch (error) {
