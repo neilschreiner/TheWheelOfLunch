@@ -526,128 +526,83 @@
         }
 
         // --- API Call (Mocked with Gemini API and google_search tool) ---
-//
-//        async function fetchLunchPlaces(zipCode) {
-//            if (!zipCode) {
-//                // Using a custom message box instead of alert()
-//                displayMessageBox('Please enter a zip code!');
-//                return;
-//            }
-//
-//            loadingSpinner.style.display = 'flex';
-//            loadPlacesBtn.disabled = true;
-//            zipCodeInput.disabled = true;
-//            wheelContainer.style.pointerEvents = 'none'; // Disable wheel interaction during loading
-//
-//            try {
-//                let chatHistory = [];
-//                // Updated prompt to request 5 places
-//                const prompt = `Find 5 popular lunch restaurants in ${zipCode} that are currently open and serve food. Provide only their names as a JSON array of strings. For example: ["Restaurant A", "Restaurant B", "Restaurant C", "Restaurant D", "Restaurant E"]. If you cannot find 5, provide as many as you can, and fill the rest with generic names like "Local Eatery", "Quick Bite Spot".`;
-//                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-//
-//                const payload = {
-//                    contents: chatHistory,
-//                    generationConfig: {
-//                        responseMimeType: "application/json",
-//                        responseSchema: {
-//                            type: "ARRAY",
-//                            items: { "type": "STRING" }
-//                        }
-//                    }
-//                };
-//
-//                // const apiKey = ""; // old method of clear text api key
-//                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-//
-//                const response = await fetch(apiUrl, {
-//                    method: 'POST',
-//                    headers: { 'Content-Type': 'application/json' },
-//                    body: JSON.stringify(payload)
-//                });
-//
-//                const result = await response.json();
-//
-//                if (result.candidates && result.candidates.length > 0 &&
-//                    result.candidates[0].content && result.candidates[0].content.parts &&
-//                    result.candidates[0].content.parts.length > 0) {
-//                    const jsonString = result.candidates[0].content.parts[0].text;
-//                    const parsedPlaces = JSON.parse(jsonString);
-//
-//                    // Ensure we always have 5 places, even if the API returns fewer
-//                    lunchPlaces = parsedPlaces.slice(0, 5);
-//                    while (lunchPlaces.length < 5) {
-//                        lunchPlaces.push(`Generic Lunch Spot ${lunchPlaces.length + 1}`);
-//                    }
-//                    populateSpinner(lunchPlaces);
-//                    wheelContainer.style.pointerEvents = 'auto'; // Enable wheel after loading
-//                    spinWheel(); // Automatically spin the wheel after loading places
-//                } else {
-//                    console.error("API response structure unexpected:", result);
-//                    displayMessageBox("Could not fetch lunch places. Please try again.");
-//                    // Fallback to default places if API fails
-//                    lunchPlaces = ["Pizza Place", "Burger Joint", "Salad Bar", "Sushi Spot", "Taco Truck"]; // 5 default places
-//                    populateSpinner(lunchPlaces);
-//                    wheelContainer.style.pointerEvents = 'auto';
-//                }
-//
-//            } catch (error) {
-//                console.error("Error fetching lunch places:", error);
-//                displayMessageBox("Failed to load lunch places. Please check your internet connection or try a different zip code.");
-//                // Fallback to default places on error
-//                lunchPlaces = ["Pizza Place", "Burger Joint", "Salad Bar", "Sushi Spot", "Taco Truck"]; // 5 default places
-//                populateSpinner(lunchPlaces);
-//                wheelContainer.style.pointerEvents = 'auto';
-//            } finally {
-//                loadingSpinner.style.display = 'none';
-///                loadPlacesBtn.disabled = false;
-//                zipCodeInput.disabled = false;
-//            }
-//        }
 
-// begin new netlfy code
-       // --- Fetch Lunch Places from Netlify Function ---
         async function fetchLunchPlaces(zipCode) {
-            resultDisplay.textContent = 'Loading lunch places...';
-            spinBtn.classList.add('hidden');
-            spinAgainBtn.classList.add('hidden');
-            tryAnotherZipBtn.classList.add('hidden');
-            spinnerInner.classList.remove('initial-image'); // Remove initial image class
+            if (!zipCode) {
+                // Using a custom message box instead of alert()
+                displayMessageBox('Please enter a zip code!');
+                return;
+            }
+
+            loadingSpinner.style.display = 'flex';
+            loadPlacesBtn.disabled = true;
+            zipCodeInput.disabled = true;
+            wheelContainer.style.pointerEvents = 'none'; // Disable wheel interaction during loading
 
             try {
-                // Call your Netlify serverless function
-                // The path is relative to your sites root: /.netlify/functions/your-function-name
-                const response = await fetch(`/.netlify/functions/get-lunch-places?zipCode=${zipCode}`);
+                let chatHistory = [];
+                // Updated prompt to request 5 places
+                const prompt = `Find 5 popular lunch restaurants in ${zipCode} that are currently open and serve food. Provide only their names as a JSON array of strings. For example: ["Restaurant A", "Restaurant B", "Restaurant C", "Restaurant D", "Restaurant E"]. If you cannot find 5, provide as many as you can, and fill the rest with generic names like "Local Eatery", "Quick Bite Spot".`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`Error: ${response.status} - ${errorData.message || 'Unknown error'}`);
-                }
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "ARRAY",
+                            items: { "type": "STRING" }
+                        }
+                    }
+                };
 
-                const data = await response.json();
-                // Assuming the API returns an array of places directly, or an object with a 'businesses' array
-                lunchPlaces = data.businesses || data; // Adjust based on your actual API response structure
+                const apiKey = "AIzaSyAcSSabU-_5QFSHM4_yjmcV8hvsmdQ_3MI";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-                if (lunchPlaces && lunchPlaces.length > 0) {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const jsonString = result.candidates[0].content.parts[0].text;
+                    const parsedPlaces = JSON.parse(jsonString);
+
+                    // Ensure we always have 5 places, even if the API returns fewer
+                    lunchPlaces = parsedPlaces.slice(0, 5);
+                    while (lunchPlaces.length < 5) {
+                        lunchPlaces.push(`Generic Lunch Spot ${lunchPlaces.length + 1}`);
+                    }
                     populateSpinner(lunchPlaces);
-                    spinBtn.classList.remove('hidden');
-                    spinAgainBtn.classList.remove('hidden');
-                    tryAnotherZipBtn.classList.remove('hidden');
-                    resultDisplay.textContent = 'Ready to spin!';
+                    wheelContainer.style.pointerEvents = 'auto'; // Enable wheel after loading
+                    spinWheel(); // Automatically spin the wheel after loading places
                 } else {
-                    populateSpinner([]); // Show initial image if no places found
-                    resultDisplay.textContent = 'No lunch places found for this zip code. Try another!';
-                    tryAnotherZipBtn.classList.remove('hidden'); // Show try another zip button
+                    console.error("API response structure unexpected:", result);
+                    displayMessageBox("Could not fetch lunch places. Please try again.");
+                    // Fallback to default places if API fails
+                    lunchPlaces = ["Pizza Place", "Burger Joint", "Salad Bar", "Sushi Spot", "Taco Truck"]; // 5 default places
+                    populateSpinner(lunchPlaces);
+                    wheelContainer.style.pointerEvents = 'auto';
                 }
 
             } catch (error) {
-                console.error('Failed to fetch lunch places:', error);
-                showMessageBox(`Failed to load lunch places: ${error.message}. Please try again.`);
-                populateSpinner([]); // Show initial image on error
-                resultDisplay.textContent = 'Error loading places.';
-                tryAnotherZipBtn.classList.remove('hidden'); // Show try another zip button
+                console.error("Error fetching lunch places:", error);
+                displayMessageBox("Failed to load lunch places. Please check your internet connection or try a different zip code.");
+                // Fallback to default places on error
+                lunchPlaces = ["Pizza Place", "Burger Joint", "Salad Bar", "Sushi Spot", "Taco Truck"]; // 5 default places
+                populateSpinner(lunchPlaces);
+                wheelContainer.style.pointerEvents = 'auto';
+            } finally {
+                loadingSpinner.style.display = 'none';
+                loadPlacesBtn.disabled = false;
+                zipCodeInput.disabled = false;
             }
         }
-// end new netlfy code
 
         // Custom Message Box (replaces alert())
         function displayMessageBox(message) {
