@@ -302,12 +302,12 @@
     </div>
 
     <script>
-        // Global variables for Firebase configuration (provided by Canvas environment)
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // Global variables for Firebase configuration (provided by Canvas environment - not used in this version)
+        // const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        // const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        // Emojis for background - Fixed broken emoji and added new ones
+        // Emojis for background
         const emojis = ['🍕', '🍝', '🍔', '🥪', '🥗', '🍗', '🍣', '🍛', '🍲', '🥣'];
         const emojiContainer = document.querySelector('.emoji-container');
 
@@ -320,7 +320,7 @@
         const chosenPlaceText = document.getElementById('chosenPlace');
         const viewOnMapsBtn = document.getElementById('viewOnMapsBtn');
         const spinAgainBtn = document.getElementById('spinAgainBtn');
-        const tryAnotherZipBtn = document.getElementById('tryAnotherZipBtn'); // New button reference
+        const tryAnotherZipBtn = document.getElementById('tryAnotherZipBtn');
 
         // Game State
         let lunchPlaces = [];
@@ -452,11 +452,25 @@
                     z-index: -1; /* Place it behind segments */
                 `;
                 wheelContainer.appendChild(initialImage);
+                // Also, hide the result box and disable spin related buttons if no places
+                resultBox.style.display = 'none';
+                // spinBtn.classList.add('hidden'); // This button no longer exists
+                // spinAgainBtn.classList.add('hidden'); // This button is in resultBox
+                // tryAnotherZipBtn.classList.remove('hidden'); // This button is in resultBox, only show if needed
                 return; // Exit if no places to add segments for
             }
 
             const numSegments = 5; // Fixed to 5 segments
             const anglePerSegment = 360 / numSegments; // 72 degrees for 5 segments
+
+            // Ensure lunchPlaces has exactly 5 items for the spinner
+            // If fewer than 5, fill with generic names
+            while (places.length < numSegments) {
+                places.push(`Generic Spot ${places.length + 1}`);
+            }
+            // If more than 5, truncate
+            places = places.slice(0, numSegments);
+
 
             places.forEach((place, index) => {
                 const segment = document.createElement('div');
@@ -472,6 +486,10 @@
 
                 wheelContainer.appendChild(segment);
             });
+
+            // Make wheel clickable to spin
+            wheelContainer.style.pointerEvents = 'auto';
+            wheelContainer.onclick = spinWheel;
         }
 
         // Function to spin the wheel
@@ -525,98 +543,26 @@
             }, 8000); // Increased spin time to 8 seconds
         }
 
-        // --- API Call (Mocked with Gemini API and google_search tool) ---
-//
-//        async function fetchLunchPlaces(zipCode) {
-//            if (!zipCode) {
-//                // Using a custom message box instead of alert()
-//                displayMessageBox('Please enter a zip code!');
-//                return;
-//            }
-//
-//            loadingSpinner.style.display = 'flex';
-//            loadPlacesBtn.disabled = true;
-//            zipCodeInput.disabled = true;
-//            wheelContainer.style.pointerEvents = 'none'; // Disable wheel interaction during loading
-//
-//            try {
-//                let chatHistory = [];
-//                // Updated prompt to request 5 places
-//                const prompt = `Find 5 popular lunch restaurants in ${zipCode} that are currently open and serve food. Provide only their names as a JSON array of strings. For example: ["Restaurant A", "Restaurant B", "Restaurant C", "Restaurant D", "Restaurant E"]. If you cannot find 5, provide as many as you can, and fill the rest with generic names like "Local Eatery", "Quick Bite Spot".`;
-//                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-//
-//                const payload = {
-//                    contents: chatHistory,
-//                    generationConfig: {
-//                        responseMimeType: "application/json",
-//                        responseSchema: {
-//                            type: "ARRAY",
-//                            items: { "type": "STRING" }
-//                        }
-//                    }
-//                };
-//
-//                // const apiKey = ""; // old method of clear text api key
-//                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-//
-//                const response = await fetch(apiUrl, {
-//                    method: 'POST',
-//                    headers: { 'Content-Type': 'application/json' },
-//                    body: JSON.stringify(payload)
-//                });
-//
-//                const result = await response.json();
-//
-//                if (result.candidates && result.candidates.length > 0 &&
-//                    result.candidates[0].content && result.candidates[0].content.parts &&
-//                    result.candidates[0].content.parts.length > 0) {
-//                    const jsonString = result.candidates[0].content.parts[0].text;
-//                    const parsedPlaces = JSON.parse(jsonString);
-//
-//                    // Ensure we always have 5 places, even if the API returns fewer
-//                    lunchPlaces = parsedPlaces.slice(0, 5);
-//                    while (lunchPlaces.length < 5) {
-//                        lunchPlaces.push(`Generic Lunch Spot ${lunchPlaces.length + 1}`);
-//                    }
-//                    populateSpinner(lunchPlaces);
-//                    wheelContainer.style.pointerEvents = 'auto'; // Enable wheel after loading
-//                    spinWheel(); // Automatically spin the wheel after loading places
-//                } else {
-//                    console.error("API response structure unexpected:", result);
-//                    displayMessageBox("Could not fetch lunch places. Please try again.");
-//                    // Fallback to default places if API fails
-//                    lunchPlaces = ["Pizza Place", "Burger Joint", "Salad Bar", "Sushi Spot", "Taco Truck"]; // 5 default places
-//                    populateSpinner(lunchPlaces);
-//                    wheelContainer.style.pointerEvents = 'auto';
-//                }
-//
-//            } catch (error) {
-//                console.error("Error fetching lunch places:", error);
-//                displayMessageBox("Failed to load lunch places. Please check your internet connection or try a different zip code.");
-//                // Fallback to default places on error
-//                lunchPlaces = ["Pizza Place", "Burger Joint", "Salad Bar", "Sushi Spot", "Taco Truck"]; // 5 default places
-//                populateSpinner(lunchPlaces);
-//                wheelContainer.style.pointerEvents = 'auto';
-//            } finally {
-//                loadingSpinner.style.display = 'none';
-///                loadPlacesBtn.disabled = false;
-//                zipCodeInput.disabled = false;
-//            }
-//        }
+        // Define the base URL for your Netlify function
+        // This should be the URL of your deployed Netlify site, followed by /.netlify/functions/function-name
+        const NETLIFY_FUNCTION_BASE_URL = 'https://thewheeloflunch.netlify.app/.netlify/functions/get-lunch-places';
 
-// begin new netlfy code
-       // --- Fetch Lunch Places from Netlify Function ---
+        // --- Fetch Lunch Places from Netlify Function ---
         async function fetchLunchPlaces(zipCode) {
-            resultDisplay.textContent = 'Loading lunch places...';
-            spinBtn.classList.add('hidden');
-            spinAgainBtn.classList.add('hidden');
-            tryAnotherZipBtn.classList.add('hidden');
-            spinnerInner.classList.remove('initial-image'); // Remove initial image class
+            if (!zipCode) {
+                displayMessageBox('Please enter a zip code!');
+                return;
+            }
+
+            loadingSpinner.style.display = 'flex';
+            loadPlacesBtn.disabled = true;
+            zipCodeInput.disabled = true;
+            wheelContainer.style.pointerEvents = 'none'; // Disable wheel interaction during loading
+            resultBox.style.display = 'none'; // Hide result box while loading
 
             try {
-                // Call your Netlify serverless function
-                // The path is relative to your sites root: /.netlify/functions/your-function-name
-                const response = await fetch(`/.netlify/functions/get-lunch-places?zipCode=${zipCode}`);
+                // Call your Netlify serverless function using the absolute URL
+                const response = await fetch(`${NETLIFY_FUNCTION_BASE_URL}?zipCode=${zipCode}`);
 
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -624,53 +570,44 @@
                 }
 
                 const data = await response.json();
-                // Assuming the API returns an array of places directly, or an object with a 'businesses' array
-                lunchPlaces = data.businesses || data; // Adjust based on your actual API response structure
+                // Assuming the Netlify function returns a direct array of strings (place names)
+                lunchPlaces = data;
 
                 if (lunchPlaces && lunchPlaces.length > 0) {
                     populateSpinner(lunchPlaces);
-                    spinBtn.classList.remove('hidden');
-                    spinAgainBtn.classList.remove('hidden');
-                    tryAnotherZipBtn.classList.remove('hidden');
-                    resultDisplay.textContent = 'Ready to spin!';
+                    // No automatic spin here, user clicks wheel
                 } else {
                     populateSpinner([]); // Show initial image if no places found
-                    resultDisplay.textContent = 'No lunch places found for this zip code. Try another!';
-                    tryAnotherZipBtn.classList.remove('hidden'); // Show try another zip button
+                    displayMessageBox('No lunch places found for this zip code. Please try another!');
                 }
 
             } catch (error) {
                 console.error('Failed to fetch lunch places:', error);
-                showMessageBox(`Failed to load lunch places: ${error.message}. Please try again.`);
+                displayMessageBox(`Failed to load lunch places: ${error.message}. Please check your internet connection or try a different zip code.`);
                 populateSpinner([]); // Show initial image on error
-                resultDisplay.textContent = 'Error loading places.';
-                tryAnotherZipBtn.classList.remove('hidden'); // Show try another zip button
+            } finally {
+                loadingSpinner.style.display = 'none';
+                loadPlacesBtn.disabled = false;
+                zipCodeInput.disabled = false;
+                // wheelContainer.style.pointerEvents = 'auto'; // Re-enabled by populateSpinner or spinWheel
             }
         }
-// end new netlfy code
 
         // Custom Message Box (replaces alert())
         function displayMessageBox(message) {
-            const messageBox = document.createElement('div');
-            messageBox.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background-color: white;
-                padding: 20px;
-                border-radius: 10px;
-                box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-                z-index: 1000;
-                text-align: center;
-                max-width: 300px;
-                font-family: 'Inter', sans-serif;
-            `;
-            messageBox.innerHTML = `
-                <p class="text-lg text-gray-800 mb-4">${message}</p>
-                <button class="btn btn-primary" onclick="this.parentNode.remove()">OK</button>
-            `;
-            document.body.appendChild(messageBox);
+            const messageBoxElement = document.getElementById('messageBox'); // Use the existing message box
+            const messageTextElement = document.getElementById('messageText');
+            const messageBoxCloseBtnElement = document.getElementById('messageBoxCloseBtn');
+
+            if (messageBoxElement && messageTextElement && messageBoxCloseBtnElement) {
+                messageTextElement.textContent = message;
+                messageBoxElement.classList.remove('hidden');
+                messageBoxCloseBtnElement.onclick = () => messageBoxElement.classList.add('hidden');
+            } else {
+                // Fallback if elements aren't found (shouldn't happen with correct HTML)
+                console.warn("Message box elements not found, falling back to basic alert.");
+                alert(message);
+            }
         }
 
 
@@ -694,13 +631,16 @@
                 fetchLunchPlaces(zipCodeInput.value);
             });
 
+            // Spin Again and Try Another Zip Code buttons are now inside resultBox,
+            // so their event listeners should be set up after resultBox is shown,
+            // or directly on the elements if they are always in the DOM.
+            // Since they are always in the DOM, we can set them here.
             spinAgainBtn.addEventListener('click', () => {
                 // Retain zip code, then refresh page
                 localStorage.setItem('lunchPickerZipCode', zipCodeInput.value);
                 window.location.reload();
             });
 
-            // New event listener for "Try Another Zip Code" button
             tryAnotherZipBtn.addEventListener('click', () => {
                 zipCodeInput.value = ''; // Clear zip code input
                 localStorage.removeItem('lunchPickerZipCode'); // Remove saved zip code
@@ -708,5 +648,12 @@
             });
         });
     </script>
+    <!-- Message Box HTML - Ensure this is present in your body -->
+    <div id="messageBox" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
+            <p id="messageText" class="text-lg font-semibold mb-4"></p>
+            <button id="messageBoxCloseBtn" class="btn btn-primary">OK</button>
+        </div>
+    </div>
 </body>
 </html>
