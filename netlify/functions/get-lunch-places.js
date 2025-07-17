@@ -3,6 +3,10 @@
 const fetch = require('node-fetch');
 
 exports.handler = async function(event, context) {
+    // Log the request origin IP and Referer URL
+    console.log('Request Origin IP:', event.headers['x-forwarded-for']);
+    console.log('Request Referer URL:', event.headers.referer);
+
     if (event.httpMethod !== 'GET') {
         return {
             statusCode: 405,
