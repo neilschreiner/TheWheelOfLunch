@@ -71,26 +71,32 @@ exports.handler = async function(event, context) {
     let searchRadius; // in meters
     if (travelMode === 'walking') {
         if (minutes <= 10) {
-            searchRadius = 1000; // 1 km for very short walks
+            searchRadius = 1000; // 1 km for short walks (5-10 mins)
         } else if (minutes <= 20) {
-            searchRadius = 2000; // 2 km for medium walks
-        } else { // This block will now only be hit if minutes > 20, but frontend limits to 20
-            searchRadius = 4000; // Default for longer walks, though not directly selectable now
+            searchRadius = 2000; // 2 km for medium walks (15-20 mins)
+        } else if (minutes <= 30) {
+            searchRadius = 3500; // 3.5 km for longer walks (up to 30 mins)
+        } else {
+            searchRadius = 4000; // Default fallback, though frontend limits to 30 mins now
         }
     } else { // driving mode
         if (minutes <= 10) {
-            searchRadius = 8000; // 8 km for short drives
+            searchRadius = 8000; // 8 km for short drives (5-10 mins)
         } else if (minutes <= 20) {
-            searchRadius = 15000; // 15 km for medium drives
-        } else { // This block will now only be hit if minutes > 20, but frontend limits to 20
-            searchRadius = 25000; // Default for longer drives, though not directly selectable now
+            searchRadius = 15000; // 15 km for medium drives (15-20 mins)
+        } else if (minutes <= 30) {
+            searchRadius = 25000; // 25 km for longer drives (up to 30 mins)
+        } else {
+            searchRadius = 25000; // Default fallback, though frontend limits to 30 mins now
         }
     }
     console.log(`Dynamic Search Radius set to: ${searchRadius} meters for ${minutes} minutes ${travelMode}`);
 
 
     // --- Step 2: Search for Nearby Places (Restaurants) ---
-    // We'll fetch up to 20 places for distance calculation.
+    // Fetch a larger number of candidates, as the frontend will now handle the 3-10 chunk logic.
+    // Google Places API allows up to 20 results per page, and up to 3 pages using next_page_token.
+    // For simplicity, we'll stick to one page (max 20 results) for now.
     const placesSearchLimit = 20;
 
     try {
@@ -113,6 +119,7 @@ exports.handler = async function(event, context) {
 
         if (!placesData.results || placesData.results.length === 0) {
             console.log('No places found in initial search.');
+            // Return an empty array; frontend will handle generic spots
             return {
                 statusCode: 200,
                 headers: {
@@ -121,11 +128,12 @@ exports.handler = async function(event, context) {
                     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
                     'Access-Control-Allow-Headers': 'Content-Type',
                 },
-                body: JSON.stringify(["Pizza Place", "Burger Joint", "Salad Bar", "Sushi Spot", "Taco Truck"]), // Generic names if no places found
+                body: JSON.stringify([]),
             };
         }
 
         // Limit the number of destinations for Distance Matrix API to avoid excessive calls
+        // We'll calculate distance for up to 20 places, then filter.
         const candidatePlaces = placesData.results.slice(0, placesSearchLimit);
         const destinations = candidatePlaces.map(place => `${place.geometry.location.lat},${place.geometry.location.lng}`);
 
@@ -164,13 +172,9 @@ exports.handler = async function(event, context) {
         // Sort by duration (shortest first)
         filteredLunchPlaces.sort((a, b) => a.duration - b.duration);
 
-        // --- Step 5: Get the top 5 names ---
-        let finalLunchPlaceNames = filteredLunchPlaces.slice(0, 5).map(place => place.name);
-
-        // If still less than 5, fill with generic names
-        while (finalLunchPlaceNames.length < 5) {
-            finalLunchPlaceNames.push(`Generic Spot ${finalLunchPlaceNames.length + 1}`);
-        }
+        // --- Step 5: Return all filtered names (frontend will handle slicing/generics) ---
+        // Return up to 10 places, as this is the max the wheel can show.
+        let finalLunchPlaceNames = filteredLunchPlaces.slice(0, 10).map(place => place.name);
 
         console.log('Returning final lunch places:', JSON.stringify(finalLunchPlaceNames));
 
