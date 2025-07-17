@@ -54,8 +54,8 @@
             border-radius: 1.5rem; /* Rounded corners */
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
             padding: 2.5rem;
-            max-width: 90%;
-            width: 600px;
+            max-width: 650px; /* Increased width */
+            width: 90%; /* Ensure responsiveness */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -278,30 +278,44 @@
 
         <div class="flex flex-col items-center gap-2 w-full">
             <label for="zipCodeInput" class="text-gray-700 font-medium">Enter your Zip Code:</label>
-            <input type="text" id="zipCodeInput" placeholder="e.g., 90210"
-                   class="p-3 border border-gray-300 rounded-lg w-full max-w-xs text-center focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <div class="flex items-center gap-2 w-full max-w-xs">
+                <input type="text" id="zipCodeInput" placeholder="e.g., 90210"
+                       class="p-3 border border-gray-300 rounded-lg w-full max-w-[200px] text-center focus:outline-none focus:ring-2 focus:ring-indigo-500">
 
-            <!-- New: Travel Time and Mode Selection -->
-            <div class="flex items-center gap-2 mt-2">
-                <select id="travelTimeSelect" class="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="10" selected>10 minutes</option> <!-- Default to 10 minutes -->
-                    <option value="15">15 minutes</option>
-                    <option value="20">20 minutes</option>
-                    <option value="30">30 minutes</option> <!-- Added 30 minutes -->
-                </select>
-                <span class="text-gray-700 font-medium">by</span>
-                <div class="flex flex-col items-start gap-2 ml-2"> <!-- Changed to flex-col for stacking -->
+                <!-- New: Going Out / Delivery Radios -->
+                <div class="flex flex-col items-start gap-1">
                     <label class="inline-flex items-center">
-                        <input type="radio" name="travelMode" value="walking" class="form-radio text-indigo-600" checked> <!-- Default to Walking -->
-                        <span class="ml-2 text-gray-700">Walking 🚶</span>
+                        <input type="radio" name="deliveryModeToggle" value="goingOut" class="form-radio text-indigo-600" checked>
+                        <span class="ml-2 text-gray-700 text-sm">Going Out 💨</span>
                     </label>
                     <label class="inline-flex items-center">
-                        <input type="radio" name="travelMode" value="driving" class="form-radio text-indigo-600">
-                        <span class="ml-2 text-gray-700">Driving 🚗</span>
+                        <input type="radio" name="deliveryModeToggle" value="delivery" class="form-radio text-indigo-600">
+                        <span class="ml-2 text-gray-700 text-sm">Delivery 🚚</span>
                     </label>
                 </div>
             </div>
-            <!-- End New: Travel Time and Mode Selection -->
+
+            <!-- Travel Time and Mode Selection (conditionally hidden) -->
+            <div id="travelOptionsContainer" class="flex items-center gap-2 mt-2">
+                <select id="travelTimeSelect" class="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="10" selected>Up to 10 minutes</option>
+                    <option value="20">Up to 20 minutes</option>
+                    <option value="30">Up to 30 minutes</option>
+                    <option value="40">Up to 40 minutes</option>
+                </select>
+                <span class="text-gray-700 font-medium">by</span>
+                <div class="flex flex-col items-start gap-2 ml-2">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="travelMode" value="walking" class="form-radio text-indigo-600" checked>
+                        <span class="ml-2 text-gray-700 text-sm">Walking 🚶</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="travelMode" value="driving" class="form-radio text-indigo-600">
+                        <span class="ml-2 text-gray-700 text-sm">Driving 🚗</span>
+                    </label>
+                </div>
+            </div>
+            <!-- End Travel Time and Mode Selection -->
 
             <button id="loadPlacesBtn" class="btn btn-primary mt-4">I'm hungry!</button>
         </div>
@@ -315,7 +329,7 @@
         </div>
 
         <!-- Loading Spinner for API call -->
-        <div id="loadingSpinner" class="hidden flex items-center justify-center mt-4">
+        <div id="loadingSpinner" class="hidden flex items-center justify-content-center mt-4">
             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
             <span class="ml-3 text-gray-600">Finding lunch spots...</span>
         </div>
@@ -344,14 +358,16 @@
 
     <script>
         // Emojis for background
-        const emojis = ['🍕', '🍝', '🍔', '🥪', '🥗', '🍗', '🍣', '🍲', '🥣', '☕', '🍩', '🫔', '🥬', '🍖'];
+        const emojis = ['🍕', '🍝', '🍔', '🥪', '🥗', '🍗', '🍣', '🍛', '🍲', '☕', '🍩', '🥟', '🍚', '🥩', '🥓'];
         const emojiContainer = document.querySelector('.emoji-container');
 
         // DOM Elements
         const zipCodeInput = document.getElementById('zipCodeInput');
         const loadPlacesBtn = document.getElementById('loadPlacesBtn');
+        const travelOptionsContainer = document.getElementById('travelOptionsContainer');
         const travelTimeSelect = document.getElementById('travelTimeSelect');
         const travelModeRadios = document.querySelectorAll('input[name="travelMode"]');
+        const deliveryModeToggles = document.querySelectorAll('input[name="deliveryModeToggle"]');
         const wheelContainer = document.getElementById('wheelContainer');
         const loadingSpinner = document.getElementById('loadingSpinner');
         const resultBox = document.getElementById('resultBox');
@@ -363,16 +379,14 @@
         // Game State
         let lunchPlaces = [];
         let isSpinning = false;
-        let currentNumSegments = 5; // Global to store the dynamically determined number of segments
+        let currentNumSegments = 5;
 
         // --- Utility Functions ---
 
-        // Function to generate random number within a range
         function getRandom(min, max) {
             return Math.random() * (max - min) + min;
         }
 
-        // Function to create and animate a single confetti piece
         function createConfetti() {
             const confetti = document.createElement('div');
             confetti.classList.add('confetti');
@@ -383,12 +397,12 @@
 
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
-            const buffer = 50; // Buffer outside viewport
+            const buffer = 50;
             const centerX = viewportWidth / 2;
             const centerY = viewportHeight / 2;
 
             let startX, startY;
-            const startSide = Math.floor(Math.random() * 4); // 0: top, 1: right, 2: bottom, 3: left
+            const startSide = Math.floor(Math.random() * 4);
 
             if (startSide === 0) { // Top
                 startX = getRandom(-buffer, viewportWidth + buffer);
@@ -401,12 +415,10 @@
                 startY = getRandom(-buffer, viewportHeight + buffer);
             }
 
-            // Mid-point towards the center of the screen
             const midX = getRandom(centerX - 150, centerX + 150);
             const midY = getRandom(centerY - 150, centerY + 150);
-            const midRot = getRandom(180, 540); // Random rotation at mid-point
+            const midRot = getRandom(180, 540);
 
-            // End points: always fall off the bottom, with some horizontal drift
             const endX = getRandom(-buffer, viewportWidth + buffer);
             const endY = viewportHeight + getRandom(50, 150);
 
@@ -418,23 +430,21 @@
             confetti.style.setProperty('--x-end', `${endX}px`);
             confetti.style.setProperty('--y-end', `${endY}px`);
 
-            confetti.style.animationDuration = `${getRandom(3, 7)}s`; // Longer duration for falling
+            confetti.style.animationDuration = `${getRandom(3, 7)}s`;
             confetti.style.animationDelay = `${getRandom(0, 0.5)}s`;
-            confetti.style.animationTimingFunction = 'ease-out'; // Fast start, slow end for burst effect
+            confetti.style.animationTimingFunction = 'ease-out';
 
             confetti.addEventListener('animationend', () => {
                 confetti.remove();
             });
         }
 
-        // Trigger confetti burst
         function triggerConfettiBurst(count = 100) {
             for (let i = 0; i < count; i++) {
                 createConfetti();
             }
         }
 
-        // Function to create and animate dancing emojis
         function createDancingEmojis() {
             emojis.forEach((emojiChar) => {
                 const emoji = document.createElement('span');
@@ -442,13 +452,11 @@
                 emoji.textContent = emojiChar;
                 emojiContainer.appendChild(emoji);
 
-                // Set random initial position
                 emoji.style.left = `${getRandom(0, 100)}vw`;
                 emoji.style.top = `${getRandom(0, 100)}vh`;
                 emoji.style.animationDuration = `${getRandom(10, 20)}s`;
                 emoji.style.animationDelay = `${getRandom(0, 5)}s`;
 
-                // Set custom properties for animation keyframes
                 emoji.style.setProperty('--x1', `${getRandom(-200, 200)}px`);
                 emoji.style.setProperty('--y1', `${getRandom(-200, 200)}px`);
                 emoji.style.setProperty('--r1', `${getRandom(-180, 180)}deg`);
@@ -466,13 +474,10 @@
             });
         }
 
-        // --- Spinner Wheel Functions ---
-
-        // Function to populate the spinner wheel with places or initial image
         function populateSpinner(places) {
-            wheelContainer.innerHTML = ''; // Clear existing segments (and any initial image)
+            wheelContainer.innerHTML = '';
 
-            if (places.length === 0) { // If no places, show the initial image
+            if (places.length === 0) {
                 const initialImage = document.createElement('img');
                 initialImage.src = 'https://neilschreiner.github.io/TheWheelOfLunch/Logos/WheelOfLunch_Characters_square.PNG';
                 initialImage.alt = 'The Wheel of Lunch Characters';
@@ -483,22 +488,20 @@
                     transform: translate(-50%, -50%);
                     width: 100%;
                     height: 100%;
-                    object-fit: cover; /* Ensure the image covers the wheel */
-                    border-radius: 50%; /* Keep it circular */
-                    z-index: -1; /* Place it behind segments */
+                    object-fit: cover;
+                    border-radius: 50%;
+                    z-index: -1;
                 `;
                 wheelContainer.appendChild(initialImage);
                 resultBox.style.display = 'none';
-                currentNumSegments = 0; // No segments for spinning
+                currentNumSegments = 0;
                 return;
             }
 
-            // Determine the number of segments based on the rules
             let actualPlacesToDisplay = [];
             if (places.length <= 3) {
                 currentNumSegments = 3;
                 actualPlacesToDisplay = places.slice(0, 3);
-                // Fill with generics if less than 3
                 while (actualPlacesToDisplay.length < 3) {
                     actualPlacesToDisplay.push(`Generic Spot ${actualPlacesToDisplay.length + 1}`);
                 }
@@ -506,7 +509,7 @@
                 currentNumSegments = 10;
                 actualPlacesToDisplay = places.slice(0, 10);
             } else {
-                currentNumSegments = places.length; // For 4 to 9 places
+                currentNumSegments = places.length;
                 actualPlacesToDisplay = places;
             }
 
@@ -514,7 +517,7 @@
 
             actualPlacesToDisplay.forEach((place, index) => {
                 const segment = document.createElement('div');
-                segment.classList.add('wheel-segment', `segment-${(index % 6) + 1}`); // Cycle through 6 colors
+                segment.classList.add('wheel-segment', `segment-${(index % 6) + 1}`);
                 const segmentRotation = index * anglePerSegment;
                 segment.style.transform = `rotate(${segmentRotation}deg)`;
 
@@ -527,12 +530,10 @@
                 wheelContainer.appendChild(segment);
             });
 
-            // Make wheel clickable to spin
             wheelContainer.style.pointerEvents = 'auto';
             wheelContainer.onclick = spinWheel;
         }
 
-        // Function to spin the wheel
         function spinWheel() {
             if (isSpinning || lunchPlaces.length === 0) {
                 displayMessageBox('No lunch places loaded to spin!');
@@ -542,66 +543,50 @@
             isSpinning = true;
             loadPlacesBtn.disabled = true;
             zipCodeInput.disabled = true;
-            travelTimeSelect.disabled = true; // Disable time select
-            travelModeRadios.forEach(radio => radio.disabled = true); // Disable mode radios
+            travelTimeSelect.disabled = true;
+            travelModeRadios.forEach(radio => radio.disabled = true);
+            deliveryModeToggles.forEach(radio => radio.disabled = true);
             wheelContainer.style.cursor = 'not-allowed';
-            resultBox.style.display = 'none'; // Hide result box if visible
+            resultBox.style.display = 'none';
 
-            // Reset transform to 0deg and force reflow to ensure animation restarts from fresh state
             wheelContainer.style.transition = 'none';
             wheelContainer.style.transform = 'rotate(0deg)';
-            void wheelContainer.offsetWidth; // Force reflow
+            void wheelContainer.offsetWidth;
 
-            // Reapply transition and calculate new rotation
             wheelContainer.style.transition = 'transform 8s cubic-bezier(0.25, 0.1, 0.25, 1)';
 
-            const anglePerSegment = 360 / currentNumSegments; // Use the global currentNumSegments
+            const anglePerSegment = 360 / currentNumSegments;
 
-            // Calculate a random target segment index based on the number of *displayed* segments
             const chosenIndex = Math.floor(Math.random() * currentNumSegments);
-            const chosenPlace = lunchPlaces[chosenIndex]; // Use the original lunchPlaces array for the actual name
+            const chosenPlace = lunchPlaces[chosenIndex];
 
-            // Calculate the target rotation.
-            // Ensure it spins at least 5 full times for visual effect.
-            // The pointer is at the top (0 degrees).
-            // To land on a segment, we need to rotate the wheel such that the segment's center aligns with the pointer.
-            // The segments are drawn starting from 0 degrees (top right).
-            // The center of segment 0 is at anglePerSegment / 2.
-            // So, to point to segment `chosenIndex`, the wheel needs to rotate by:
-            // (360 - (chosenIndex * anglePerSegment + anglePerSegment / 2))
-            // Plus multiple full rotations.
             const minFullRotations = 5;
             const targetRotation = (minFullRotations * 360) + (360 - (chosenIndex * anglePerSegment + anglePerSegment / 2));
 
-            // Apply the rotation
             wheelContainer.style.transform = `rotate(${targetRotation}deg)`;
 
-            // After the spin animation completes
             setTimeout(() => {
                 isSpinning = false;
                 loadPlacesBtn.disabled = false;
                 zipCodeInput.disabled = false;
-                travelTimeSelect.disabled = false; // Enable time select
-                travelModeRadios.forEach(radio => radio.disabled = false); // Enable mode radios
+                travelTimeSelect.disabled = false;
+                travelModeRadios.forEach(radio => radio.disabled = false);
+                deliveryModeToggles.forEach(radio => radio.disabled = false);
                 wheelContainer.style.cursor = 'pointer';
 
-                // Display result
                 chosenPlaceText.textContent = chosenPlace;
                 resultBox.style.display = 'flex';
 
-                // Construct Google Maps URL
                 const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(chosenPlace + ' ' + zipCodeInput.value)}`;
                 viewOnMapsBtn.onclick = () => window.open(mapsUrl, '_blank');
 
-                triggerConfettiBurst(); // Shoot confetti
-            }, 8000); // Increased spin time to 8 seconds
+                triggerConfettiBurst();
+            }, 8000);
         }
 
-        // Define the base URL for your Netlify function
         const NETLIFY_FUNCTION_BASE_URL = 'https://thewheeloflunch.netlify.app/.netlify/functions/get-lunch-places';
 
-        // --- Fetch Lunch Places from Netlify Function ---
-        async function fetchLunchPlaces(zipCode, minutes, travelMode, autoSpin = false) { // Added minutes and travelMode parameters
+        async function fetchLunchPlaces(zipCode, minutes, travelMode, deliveryMode, autoSpin = false) {
             if (!zipCode) {
                 displayMessageBox('Please enter a zip code!');
                 return;
@@ -610,14 +595,15 @@
             loadingSpinner.style.display = 'flex';
             loadPlacesBtn.disabled = true;
             zipCodeInput.disabled = true;
-            travelTimeSelect.disabled = true; // Disable time select
-            travelModeRadios.forEach(radio => radio.disabled = true); // Disable mode radios
-            wheelContainer.style.pointerEvents = 'none'; // Disable wheel interaction during loading
-            resultBox.style.display = 'none'; // Hide result box while loading
+            travelTimeSelect.disabled = true;
+            travelModeRadios.forEach(radio => radio.disabled = true);
+            deliveryModeToggles.forEach(radio => radio.disabled = true);
+            wheelContainer.style.pointerEvents = 'none';
+            resultBox.style.display = 'none';
 
             try {
-                // Call your Netlify serverless function with new parameters
-                const response = await fetch(`${NETLIFY_FUNCTION_BASE_URL}?zipCode=${zipCode}&minutes=${minutes}&travelMode=${travelMode}`);
+                const url = `${NETLIFY_FUNCTION_BASE_URL}?zipCode=${zipCode}&minutes=${minutes}&travelMode=${travelMode}&deliveryMode=${deliveryMode}`;
+                const response = await fetch(url);
 
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -625,35 +611,34 @@
                 }
 
                 const data = await response.json();
-                lunchPlaces = data; // This now contains up to 10 filtered places from backend
+                lunchPlaces = data;
 
                 if (lunchPlaces && lunchPlaces.length > 0) {
-                    populateSpinner(lunchPlaces); // Populate wheel based on actual places
-                    if (autoSpin) { // Automatically spin if autoSpin is true
+                    populateSpinner(lunchPlaces);
+                    if (autoSpin) {
                         spinWheel();
                     }
                 } else {
-                    populateSpinner([]); // Show initial image if no places found
+                    populateSpinner([]);
                     displayMessageBox('No lunch places found for this zip code matching your criteria. Please try different options!');
                 }
 
             } catch (error) {
                 console.error('Failed to fetch lunch places:', error);
                 displayMessageBox(`Failed to load lunch places: ${error.message}. Please check your internet connection or try different options.`);
-                populateSpinner([]); // Show initial image on error
+                populateSpinner([]);
             } finally {
                 loadingSpinner.style.display = 'none';
                 loadPlacesBtn.disabled = false;
                 zipCodeInput.disabled = false;
-                travelTimeSelect.disabled = false; // Enable time select
-                travelModeRadios.forEach(radio => radio.disabled = false); // Enable mode radios
-                // wheelContainer.style.pointerEvents = 'auto'; // Re-enabled by populateSpinner or spinWheel
+                travelTimeSelect.disabled = false;
+                travelModeRadios.forEach(radio => radio.disabled = false);
+                deliveryModeToggles.forEach(radio => radio.disabled = false);
             }
         }
 
-        // Custom Message Box (replaces alert())
         function displayMessageBox(message) {
-            const messageBoxElement = document.getElementById('messageBox'); // Use the existing message box
+            const messageBoxElement = document.getElementById('messageBox');
             const messageTextElement = document.getElementById('messageText');
             const messageBoxCloseBtnElement = document.getElementById('messageBoxCloseBtn');
 
@@ -662,22 +647,27 @@
                 messageBoxElement.classList.remove('hidden');
                 messageBoxCloseBtnElement.onclick = () => messageBoxElement.classList.add('hidden');
             } else {
-                // Fallback if elements aren't found (shouldn't happen with correct HTML)
                 console.warn("Message box elements not found, falling back to basic alert.");
                 alert(message);
             }
         }
 
-
-        // --- Event Listeners and Initialization ---
+        function toggleTravelOptionsVisibility() {
+            const selectedDeliveryMode = document.querySelector('input[name="deliveryModeToggle"]:checked').value;
+            if (selectedDeliveryMode === 'delivery') {
+                travelOptionsContainer.classList.add('hidden');
+            } else {
+                travelOptionsContainer.classList.remove('hidden');
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             createDancingEmojis();
 
-            // Load saved zip code and default travel options
             const savedZipCode = localStorage.getItem('lunchPickerZipCode');
-            const savedTravelTime = localStorage.getItem('lunchPickerTravelTime') || '10'; // Default to 10 minutes
+            const savedTravelTime = localStorage.getItem('lunchPickerTravelTime') || '10';
             const savedTravelMode = localStorage.getItem('lunchPickerTravelMode') || 'walking';
+            const savedDeliveryMode = localStorage.getItem('lunchPickerDeliveryMode') || 'goingOut';
 
             zipCodeInput.value = savedZipCode || '';
             travelTimeSelect.value = savedTravelTime;
@@ -686,44 +676,62 @@
                     radio.checked = true;
                 }
             });
+            deliveryModeToggles.forEach(radio => {
+                if (radio.value === savedDeliveryMode) {
+                    radio.checked = true;
+                }
+            });
+
+            toggleTravelOptionsVisibility();
+
+            deliveryModeToggles.forEach(radio => {
+                radio.addEventListener('change', toggleTravelOptionsVisibility);
+            });
+
 
             if (savedZipCode) {
-                // Automatically load places, but don't auto-spin on initial load
-                fetchLunchPlaces(savedZipCode, savedTravelTime, savedTravelMode, false);
+                fetchLunchPlaces(savedZipCode, savedTravelTime, savedTravelMode, savedDeliveryMode, false);
             } else {
-                // If no saved zip code, display the initial image inside the wheel
-                populateSpinner([]); // Call with empty array to show initial image
+                populateSpinner([]);
             }
 
-            // Changed button text and added auto-spin
             loadPlacesBtn.textContent = "I'm hungry!";
             loadPlacesBtn.addEventListener('click', () => {
                 const currentZipCode = zipCodeInput.value;
-                const currentTravelTime = travelTimeSelect.value;
-                const currentTravelMode = document.querySelector('input[name="travelMode"]:checked').value;
+                const currentDeliveryMode = document.querySelector('input[name="deliveryModeToggle"]:checked').value;
 
-                localStorage.setItem('lunchPickerZipCode', currentZipCode); // Save zip code
-                localStorage.setItem('lunchPickerTravelTime', currentTravelTime); // Save travel time
-                localStorage.setItem('lunchPickerTravelMode', currentTravelMode); // Save travel mode
+                let currentTravelTime;
+                let currentTravelMode;
 
-                fetchLunchPlaces(currentZipCode, currentTravelTime, currentTravelMode, true); // Load places AND auto-spin
+                if (currentDeliveryMode === 'delivery') {
+                    currentTravelTime = '35';
+                    currentTravelMode = 'driving';
+                } else {
+                    currentTravelTime = travelTimeSelect.value;
+                    currentTravelMode = document.querySelector('input[name="travelMode"]:checked').value;
+                }
+
+                localStorage.setItem('lunchPickerZipCode', currentZipCode);
+                localStorage.setItem('lunchPickerTravelTime', currentTravelTime);
+                localStorage.setItem('lunchPickerTravelMode', currentTravelMode);
+                localStorage.setItem('lunchPickerDeliveryMode', currentDeliveryMode);
+
+                fetchLunchPlaces(currentZipCode, currentTravelTime, currentTravelMode, currentDeliveryMode, true);
             });
 
-            // Spin Again button now directly triggers spinWheel()
             spinAgainBtn.addEventListener('click', () => {
-                // No need to reload the page as places are already loaded
                 spinWheel();
             });
 
             tryAnotherZipBtn.addEventListener('click', () => {
-                zipCodeInput.value = ''; // Clear zip code input
-                localStorage.removeItem('lunchPickerZipCode'); // Remove saved zip code
-                localStorage.removeItem('lunchPickerTravelTime'); // Remove saved travel time
-                localStorage.removeItem('lunchPickerTravelMode'); // Remove saved travel mode
-                window.location.reload(); // Refresh the page to start fresh
+                zipCodeInput.value = '';
+                localStorage.removeItem('lunchPickerZipCode');
+                localStorage.removeItem('lunchPickerTravelTime');
+                localStorage.removeItem('lunchPickerTravelMode');
+                localStorage.removeItem('lunchPickerDeliveryMode');
+                window.location.reload();
             });
 
-            // retrieve the last time the repo was updated
             fetch('https://api.github.com/repos/neilschreiner/TheWheelOfLunch')
               .then(response => response.json())
               .then(data => {
@@ -734,7 +742,6 @@
               .catch(error => console.error('Error fetching data:', error));
         });
     </script>
-    <!-- Message Box HTML - Ensure this is present in your body -->
     <div id="messageBox" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden">
         <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
             <p id="messageText" class="text-lg font-semibold mb-4"></p>
@@ -743,3 +750,4 @@
     </div>
 </body>
 </html>
+�
