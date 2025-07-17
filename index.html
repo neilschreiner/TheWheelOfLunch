@@ -280,7 +280,7 @@
             <label for="zipCodeInput" class="text-gray-700 font-medium">Enter your Zip Code:</label>
             <input type="text" id="zipCodeInput" placeholder="e.g., 90210"
                    class="p-3 border border-gray-300 rounded-lg w-full max-w-xs text-center focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <button id="loadPlacesBtn" class="btn btn-primary mt-2">Load Lunch Places</button>
+            <button id="loadPlacesBtn" class="btn btn-primary mt-2">I'm hungry!</button>
         </div>
 
         <!-- Spinner Wheel and Pointer -->
@@ -326,7 +326,7 @@
         // const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         // Emojis for background
-        const emojis = ['🍕', '🍝', '🍔', '🥪', '🥗', '🍗', '🍣', '🍛', '🍲', '🥣'];
+        const emojis = ['🍕', '🍝', '🍔', '�', '🥗', '🍗', '🍣', '🍛', '🍲', '🥣', '☕', '🍩', '🫔', '🥬', '🍖', '🍔'];
         const emojiContainer = document.querySelector('.emoji-container');
 
         // DOM Elements
@@ -520,6 +520,14 @@
             wheelContainer.style.cursor = 'not-allowed';
             resultBox.style.display = 'none'; // Hide result box if visible
 
+            // Reset transform to 0deg and force reflow to ensure animation restarts from fresh state
+            wheelContainer.style.transition = 'none';
+            wheelContainer.style.transform = 'rotate(0deg)';
+            void wheelContainer.offsetWidth; // Force reflow
+
+            // Reapply transition and calculate new rotation
+            wheelContainer.style.transition = 'transform 8s cubic-bezier(0.25, 0.1, 0.25, 1)';
+
             const numSegments = 5; // Fixed to 5 segments
             const anglePerSegment = 360 / numSegments;
 
@@ -566,7 +574,7 @@
         const NETLIFY_FUNCTION_BASE_URL = 'https://thewheeloflunch.netlify.app/.netlify/functions/get-lunch-places';
 
         // --- Fetch Lunch Places from Netlify Function ---
-        async function fetchLunchPlaces(zipCode) {
+        async function fetchLunchPlaces(zipCode, autoSpin = false) { // Added autoSpin parameter
             if (!zipCode) {
                 displayMessageBox('Please enter a zip code!');
                 return;
@@ -593,7 +601,9 @@
 
                 if (lunchPlaces && lunchPlaces.length > 0) {
                     populateSpinner(lunchPlaces);
-                    // No automatic spin here, user clicks wheel
+                    if (autoSpin) { // Automatically spin if autoSpin is true
+                        spinWheel();
+                    }
                 } else {
                     populateSpinner([]); // Show initial image if no places found
                     displayMessageBox('No lunch places found for this zip code. Please try another!');
@@ -638,25 +648,25 @@
             const savedZipCode = localStorage.getItem('lunchPickerZipCode');
             if (savedZipCode) {
                 zipCodeInput.value = savedZipCode;
-                fetchLunchPlaces(savedZipCode); // Automatically load places if zip code exists
+                // Automatically load places, but don't auto-spin on initial load
+                fetchLunchPlaces(savedZipCode, false);
             } else {
                 // If no saved zip code, display the initial image inside the wheel
                 populateSpinner([]); // Call with empty array to show initial image
             }
 
+            // Changed button text and added auto-spin
+            loadPlacesBtn.textContent = "I'm hungry!";
             loadPlacesBtn.addEventListener('click', () => {
                 localStorage.setItem('lunchPickerZipCode', zipCodeInput.value); // Save zip code
-                fetchLunchPlaces(zipCodeInput.value);
+                fetchLunchPlaces(zipCodeInput.value, true); // Load places AND auto-spin
             });
 
-            // Spin Again and Try Another Zip Code buttons are now inside resultBox,
-            // so their event listeners should be set up after resultBox is shown,
-            // or directly on the elements if they are always in the DOM.
-            // Since they are always in the DOM, we can set them here.
+            // Spin Again button now directly triggers spinWheel()
             spinAgainBtn.addEventListener('click', () => {
-                // Retain zip code, then refresh page
-                localStorage.setItem('lunchPickerZipCode', zipCodeInput.value);
-                window.location.reload();
+                // Retain zip code, then simply spin the wheel again
+                // No need to reload the page as places are already loaded
+                spinWheel();
             });
 
             tryAnotherZipBtn.addEventListener('click', () => {
@@ -685,3 +695,4 @@
     </div>
 </body>
 </html>
+�
