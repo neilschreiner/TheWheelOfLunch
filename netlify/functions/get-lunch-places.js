@@ -1,96 +1,121 @@
 // netlify/functions/get-lunch-places.js
 
-// This function will act as a proxy to your lunch place API.
-// It will receive requests from your frontend, add the API key securely,
-// and then forward the request to the actual lunch place API.
-
-// Import the node-fetch library to make HTTP requests (Netlify includes it by default)
-// If you were running this locally without Netlify, you might need to 'npm install node-fetch@2'
 const fetch = require('node-fetch');
 
 exports.handler = async function(event, context) {
-    // Ensure this is a GET request, as our frontend will be sending a GET request
     if (event.httpMethod !== 'GET') {
         return {
-            statusCode: 405, // Method Not Allowed
+            statusCode: 405,
             body: JSON.stringify({ message: 'Method Not Allowed' }),
         };
     }
 
-    // Extract the zip code from the query parameters sent by the frontend
-    // The frontend will send it like: /.netlify/functions/get-lunch-places?zipCode=12345
     const zipCode = event.queryStringParameters.zipCode;
 
     if (!zipCode) {
         return {
-            statusCode: 400, // Bad Request
+            statusCode: 400,
             body: JSON.stringify({ message: 'Zip code is required.' }),
         };
     }
 
-    // Retrieve your API key from Netlify's environment variables.
-    // IMPORTANT: You will set this environment variable in the Netlify UI.
-    // NEVER hardcode your API key directly in this file or any file committed to Git!
-    const API_KEY = process.env.LUNCH_PLACES_API_KEY;
+    const API_KEY = process.env.LUNCH_PLACES_API_KEY; // Your Google Places API Key
 
     if (!API_KEY) {
         console.error("LUNCH_PLACES_API_KEY environment variable is not set.");
         return {
-            statusCode: 500, // Internal Server Error
+            statusCode: 500,
             body: JSON.stringify({ message: 'Server configuration error: API key missing.' }),
         };
     }
 
-    // Construct the URL for the actual third-party lunch place API.
-    // Replace 'YOUR_LUNCH_API_BASE_URL' with the actual base URL of the API you are using.
-    // For example, if it's a Yelp API, it might be something like 'https://api.yelp.com/v3/businesses/search'
-    // You'll also need to adjust the query parameters based on how your specific API expects them.
-    // This example assumes a simple 'zip_code' parameter and a 'term' for "lunch" or "restaurants".
-    const thirdPartyApiUrl = `YOUR_LUNCH_API_BASE_URL?zip_code=${zipCode}&term=restaurants&limit=20`;
+    let latitude, longitude;
 
+    // --- Step 1: Geocode the Zip Code ---
     try {
-        // Make the request to the third-party API, including your API key in the headers.
-        // The 'Authorization' header with 'Bearer' token is common for many APIs.
-        const response = await fetch(thirdPartyApiUrl, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${API_KEY}`,
-                'Content-Type': 'application/json',
-                // Add any other headers required by your lunch place API
-            },
-        });
+        const geocodingApiUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${zipCode}&key=${API_KEY}`;
+        const geoResponse = await fetch(geocodingApiUrl);
+        const geoData = await geoResponse.json();
 
-        // Check if the third-party API request was successful
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`Error from third-party API: ${response.status} - ${errorText}`);
+        if (!geoResponse.ok || geoData.status !== 'OK' || geoData.results.length === 0) {
+            console.error('Geocoding API error:', geoData);
             return {
-                statusCode: response.status,
-                body: JSON.stringify({ message: 'Failed to fetch data from lunch place API.', details: errorText }),
+                statusCode: geoResponse.status,
+                body: JSON.stringify({ message: 'Failed to geocode zip code.', details: geoData.error_message || 'No results' }),
             };
         }
 
-        // Parse the JSON response from the third-party API
-        const data = await response.json();
+        latitude = geoData.results[0].geometry.location.lat;
+        longitude = geoData.results[0].geometry.location.lng;
 
-        // Return the data back to your frontend
+    } catch (error) {
+        console.error('Error during geocoding:', error);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ message: 'Internal server error during geocoding.', error: error.message }),
+        };
+    }
+
+    // --- Step 2: Search for Places (Restaurants) using Geocoded Coordinates ---
+    try {
+        // Google Places Nearby Search API
+        // type=restaurant for restaurants
+        // rankby=distance (requires keyword or type, and radius is ignored)
+        // keyword=lunch or type=restaurant
+        // We'll use a radius to ensure we get places around the zip code.
+        // Google recommends a radius of 50,000 meters (50km) as a maximum.
+        // We'll ask for a high limit and then truncate to 5.
+        const placesApiUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=10000&type=restaurant&key=${API_KEY}`; // 10km radius
+
+        const placesResponse = await fetch(placesApiUrl);
+        const placesData = await placesResponse.json();
+
+        if (!placesResponse.ok || placesData.status !== 'OK') {
+            console.error('Places API error:', placesData);
+            return {
+                statusCode: placesResponse.status,
+                body: JSON.stringify({ message: 'Failed to fetch places.', details: placesData.error_message || 'API status not OK' }),
+            };
+        }
+
+        // Extract place names, filter for open places if desired, and limit to 5
+        let lunchPlaces = [];
+        if (placesData.results && placesData.results.length > 0) {
+            // Filter for places that are "OPEN_NOW" if that data is available and reliable
+            // Note: 'opening_hours' might not always be present or accurate, especially for small businesses.
+            const openPlaces = placesData.results.filter(place => place.opening_hours && place.opening_hours.open_now);
+
+            // Prioritize open places, then fill with any places if not enough open ones
+            const placesToUse = openPlaces.length >= 5 ? openPlaces : placesData.results;
+
+            // Get the names, ensuring we only take up to 5
+            lunchPlaces = placesToUse.slice(0, 5).map(place => place.name);
+
+            // If still less than 5, fill with generic names
+            while (lunchPlaces.length < 5) {
+                lunchPlaces.push(`Generic Spot ${lunchPlaces.length + 1}`);
+            }
+        } else {
+            // If no results, provide generic names
+            lunchPlaces = ["Pizza Place", "Burger Joint", "Salad Bar", "Sushi Spot", "Taco Truck"];
+        }
+
         return {
             statusCode: 200,
             headers: {
                 'Content-Type': 'application/json',
-                // Add CORS headers if your frontend is on a different domain than your Netlify function
-                // For GitHub Pages, it's good practice to include them.
-                'Access-Control-Allow-Origin': '*', // Or restrict to your GitHub Pages domain: 'https://neilschreiner.github.io'
+                'Access-Control-Allow-Origin': '*', // Or restrict to your Netlify domain: 'https://thewheeloflunch.netlify.app'
                 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type',
             },
-            body: JSON.stringify(data),
+            body: JSON.stringify(lunchPlaces), // Send back the array of names
         };
+
     } catch (error) {
-        console.error('Error in serverless function:', error);
+        console.error('Error during places search:', error);
         return {
-            statusCode: 500, // Internal Server Error
-            body: JSON.stringify({ message: 'Internal server error.', error: error.message }),
+            statusCode: 500,
+            body: JSON.stringify({ message: 'Internal server error during places search.', error: error.message }),
         };
     }
 };

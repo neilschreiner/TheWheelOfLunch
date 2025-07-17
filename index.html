@@ -251,6 +251,20 @@
                 font-size: 2rem;
             }
         }
+        .version-tag {
+            font-size: 0.6em; /* Very small print */
+            color: #777;
+            margin-top: 10px; /* Space above the tag to push it below the game-container */
+        }
+
+        .version-tag a { /* Targeting the link within the version tag */
+            color: #777; /* Gray color for the link */
+            text-decoration: none; /* Remove underline */
+        }
+
+        .version-tag a:hover {
+            text-decoration: underline; /* Add underline on hover for interactivity */
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
@@ -299,6 +313,10 @@
                 </div>
             </div>
         </div>
+        <br/>
+        <div id="version-container">
+			<p id="versionTag" class="version-tag">Last updated: <span id="last-updated"></span> - <a href="https://neilschreiner.github.io/">&copy; neil</a> - <a href="https://github.com/neilschreiner/TheWheelOfLunch/blob/main/LICENSE">MIT License</a></p>
+    	</div>
     </div>
 
     <script>
@@ -646,6 +664,16 @@
                 localStorage.removeItem('lunchPickerZipCode'); // Remove saved zip code
                 window.location.reload(); // Refresh the page to start fresh
             });
+
+            // retrieve the last time the repo was updated
+            fetch('https://api.github.com/repos/neilschreiner/TheWheelOfLunch')
+              .then(response => response.json())
+              .then(data => {
+                const lastUpdated = new Date(data.pushed_at);
+                const formattedDate = lastUpdated.toLocaleDateString() + ' ' + lastUpdated.toLocaleTimeString();
+                document.getElementById('last-updated').textContent = formattedDate;
+              })
+              .catch(error => console.error('Error fetching data:', error));
         });
     </script>
     <!-- Message Box HTML - Ensure this is present in your body -->
